@@ -645,6 +645,13 @@ main(void)
 		{ 13, "IORING_REGISTER_FILES2" },
 		{ 15, "IORING_REGISTER_BUFFERS2" },
 	};
+	static const struct strval32 rsrc_flags[] = {
+		{ ARG_STR(0) },
+		{ ARG_XLAT_KNOWN(0x1, "IORING_RSRC_REGISTER_SPARSE") },
+		{ ARG_XLAT_UNKNOWN(0x2, "IORING_RSRC_REGISTER_???") },
+		{ ARG_XLAT_KNOWN(0xbadc0ded,
+				 "IORING_RSRC_REGISTER_SPARSE|0xbadc0dec") },
+	};
 	static const uint64_t tags[] = { 0x1337, 1, 0xdead, 0xfacefeed,
 					 0xbadc0deddadfacedULL, 0 };
 	const uint64_t *arg_tags = tail_memdup(tags, sizeof(tags));
@@ -702,7 +709,7 @@ main(void)
 			rsrc_reg->nr += !!(j & 16);
 			rsrc_reg->nr &= ~-!(j & 32);
 
-			rsrc_reg->resv = j & 64 ? 0xbadc0ded : 0;
+			rsrc_reg->flags = ARR_ITEM(rsrc_flags, j >> 6).val;
 			rsrc_reg->resv2 = j & 128 ? 0xfacecafebeeffeedULL : 0;
 
 			memcpy(big_rsrc_reg, rsrc_reg, sizeof(*rsrc_reg));
@@ -715,14 +722,14 @@ main(void)
 						      sizeof(*rsrc_reg)
 						      + (k / 2) * 8);
 				printf("io_uring_register(%u<%s>, " XLAT_FMT
-				       ", {nr=%zu%s%s",
+				       ", {nr=%zu, flags=%s%s",
 				       fd_null, path_null,
 				       XLAT_SEL(rsrc_reg_ops[i].op,
 						rsrc_reg_ops[i].str),
 				       j & 32 ? (i ? ARRAY_SIZE(iov)
 						   : ARRAY_SIZE(fds))
 						+ !!(j & 16) : 0,
-				       j & 64 ? ", resv=0xbadc0ded" : "",
+				       ARR_ITEM(rsrc_flags, j >> 6).str,
 				       j & 128 ? ", resv2=0xfacecafebeeffeed"
 					       : "");
 				print_rsrc_data(arg_iov, iov, arg_fds, fds,

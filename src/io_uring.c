@@ -19,6 +19,7 @@
 #include "xlat/uring_setup_flags.h"
 #include "xlat/uring_sqe_flags.h"
 #include "xlat/uring_register_opcodes.h"
+#include "xlat/uring_register_rsrc_flags.h"
 #include "xlat/uring_restriction_opcodes.h"
 
 static void
@@ -391,7 +392,6 @@ print_io_uring_register_rsrc(struct tcb *tcp, const kernel_ulong_t addr,
 {
 	struct io_uring_rsrc_register arg;
 	CHECK_TYPE_SIZE(arg, 32);
-	CHECK_TYPE_SIZE(arg.resv, sizeof(uint32_t));
 	CHECK_TYPE_SIZE(arg.resv2, sizeof(uint64_t));
 
 	if (size < 32) {
@@ -405,10 +405,9 @@ print_io_uring_register_rsrc(struct tcb *tcp, const kernel_ulong_t addr,
 	tprint_struct_begin();
 	PRINT_FIELD_U(arg, nr);
 
-	if (arg.resv) {
-		tprint_struct_next();
-		PRINT_FIELD_X(arg, resv);
-	}
+	tprint_struct_next();
+	PRINT_FIELD_FLAGS(arg, flags, uring_register_rsrc_flags,
+			  "IORING_RSRC_REGISTER_???");
 
 	if (arg.resv2) {
 		tprint_struct_next();
